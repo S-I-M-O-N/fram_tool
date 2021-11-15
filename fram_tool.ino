@@ -3,8 +3,9 @@ const int programPin=3;
 const int readPin=4;
 const int enablePin=2;
 
-const unsigned long romSize=1024*1024;
-
+int powerof2=8; 
+unsigned long kilos=pow(2,powerof2);
+unsigned long romSize=kilos*1024;
 
 /*
  * snes pinout(some of the pins don't follow the standard pinout)
@@ -77,7 +78,7 @@ void setup() {
   digitalWrite(programPin,LOW);
   digitalWrite(readPin,LOW);
   digitalWrite(enablePin,HIGH);
-  Serial.begin(250000);
+  Serial.begin(115200);
   delay(1000);
   programMode();
 }
@@ -97,7 +98,12 @@ void loop() {
           writeSector(secH,secL);
           break;
         case 'r':
-          readMode();
+          while(Serial.available()==0);
+          powerof2=Serial.read();
+          //powerof2=0x02;
+          kilos=long(pow(2,powerof2)+1);
+	        romSize=long(kilos*1024);
+	        readMode();
           readROM();
           break;
       }
@@ -112,15 +118,15 @@ void programMode(){
   for(int i=0;i<8;i++){
     pinMode(dataPins[i],OUTPUT);
   }
-  digitalWrite(readPin,LOW);
-  digitalWrite(programPin,HIGH);
+  digitalWrite(readPin,HIGH);
+  digitalWrite(programPin,LOW);
 }
 void readMode(){
   //data as input
   for(int i=0;i<8;i++){
     pinMode(dataPins[i],INPUT);
   }
-  digitalWrite(programPin,LOW);
+  digitalWrite(programPin,HIGH);
   digitalWrite(readPin,LOW);
 
 }
@@ -193,21 +199,22 @@ void writeSector(unsigned char sectorH,unsigned char sectorL){
 
 }
 int readROM(){
-  unsigned long num=1024*1024;
+  //unsigned long num=1024*1024;
+  unsigned long num = romSize;
   unsigned long address;
   byte data,checksum=0;
   address=0;
   //read mode
   readMode();
   //start frame
-  digitalWrite(readPin,LOW);
-  digitalWrite(programPin,LOW);
-  for(long i;i<1048576;i++){//1048576
+  //digitalWrite(readPin,LOW);
+  //digitalWrite(programPin,LOW);
+  for(long i;i<num;i++){//1048576
     data=readByte(address++);
     Serial.write(data);
     //checksum^=data;
   }
-  digitalWrite(readPin,HIGH);
+  //digitalWrite(readPin,HIGH);
 
   //Serial.write(checksum);
   //Serial.write(0xAA);
